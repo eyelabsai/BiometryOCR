@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EyeLabs.AI - OCR </title>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .container {
+      text-align: center;
+      max-width: 600px;
+      margin-bottom: 20px;
+    }
+    .output {
+      position: relative;
+      display: inline-block;
+      border: 1px solid #ddd;
+    }
+    .ocr-text {
+      position: absolute;
+      background-color: rgba(255, 255, 255, 0.7);
+      padding: 1px;
+      font-size: 16px;
+      border-radius: 2px;
+      color: black;
+      border: 1px solid red; 
+      box-sizing: border-box; 
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>EyeLabs.AI - OCR</h1>
+  <input type="file" id="imageUpload" accept="image/*" />
+  <button id="processImage">Process Image</button>
+</div>
+
+<div class="output" id="ocrOutput">
+   <p>  The OCR Output would appear here , the original image with overlay of the text - ocr</p>
+   <p>  Upload an image Using the Choose File button and then use Process Image button to get the result</p>
+</div>
+
+<script>
+  document.getElementById('processImage').addEventListener('click', async () => {
+    const fileInput = document.getElementById('imageUpload');
+    const ocrOutputDiv = document.getElementById('ocrOutput');
+
+    if (fileInput.files.length === 0) {
+      alert('Please select an image file.');
+      return;
+    }
+
+    const imageFile = fileInput.files[0];
+    const reader = new FileReader();
+
+    reader.onload = async () => {
+      const imageData = reader.result;
+
+      // Clear previous output
+      ocrOutputDiv.innerHTML = '';
+      const img = new Image();
+      img.src = imageData;
+      img.onload = async () => {
+        ocrOutputDiv.style.width = img.width + 'px';
+        ocrOutputDiv.style.height = img.height + 'px';
+        ocrOutputDiv.appendChild(img);
+
+        try {
+          // Perform OCR with bounding box info
+          const { data: { words } } = await Tesseract.recognize(
+            imageData,
+            'eng+ell',
+            { logger: m => console.log(m) }
+          );
+            
+          words.forEach(word => {
+            console.log("Get the data of word",word)
+            const textSpan = document.createElement('span');
+            textSpan.className = 'ocr-text';
+            textSpan.innerText = word.text;
+            
+            // Apply bounding box styles
+            textSpan.style.left = `${word.bbox.x0}px`;
+            textSpan.style.top = `${word.bbox.y0}px`;
+            textSpan.style.width = `${word.bbox.x1 - word.bbox.x0}px`;
+            textSpan.style.height = `${word.bbox.y1 - word.bbox.y0}px`;
+            
+            ocrOutputDiv.appendChild(textSpan);
+          });
+        } catch (error) {
+          alert('Error processing image.');
+          console.error(error);
+        }
+      };
+    };
+
+    reader.readAsDataURL(imageFile);
+  });
+</script>
+
+</body>
+</html>
